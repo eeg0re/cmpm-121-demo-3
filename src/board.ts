@@ -17,13 +17,16 @@ export class Board {
     // ...
     this.tileWidth = tileWidth;
     this.tileVisibilityRadius = tileVisibilityRadius;
-    this.knownCells = new Map();
+    this.knownCells = new Map<string, Cell>();
   }
 
   private getCanonicalCell(cell: Cell): Cell {
     const { i, j } = cell;
     const key = [i, j].toString();
     // ...
+    if (!this.knownCells.has(key)) {
+      this.knownCells.set(key, { i, j });
+    }
     return this.knownCells.get(key)!;
   }
 
