@@ -89,14 +89,13 @@ function SpawnCache(i: number, j: number) {
   });
 }
 
-function SpawnInNeighborhood(neighborhoodSize: number) {
+function SpawnInNeighborhood(neighbors: Cell[]) {
   // function for spawning caches in a player's immediate surroundings
   // this function will likely change later on
-  for (let i = -neighborhoodSize; i < neighborhoodSize; i++) {
-    for (let j = -neighborhoodSize; j < neighborhoodSize; j++) {
-      if (luck([i, j].toString()) < CACHE_SPAWN_PROB) {
-        SpawnCache(i, j);
-      }
+  for (let k = 0; k < neighbors.length; k++) {
+    const { i, j } = neighbors[k];
+    if (luck([i, j].toString()) < CACHE_SPAWN_PROB) {
+      SpawnCache(i, j);
     }
   }
 }
@@ -117,9 +116,7 @@ let playerTokens: number = 0;
 const inventory = document.querySelector<HTMLDivElement>("#inventory")!;
 inventory.innerHTML = `Tokens: ${playerTokens}`;
 
-SpawnInNeighborhood(NEIGHBORHOOD_SIZE);
-
 // create the world board - holds all the cells for our game
 const worldBoard = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE);
 const neighbors: Cell[] = worldBoard.getCellsNearPoint(PLAYER_POS);
-console.table(neighbors);
+SpawnInNeighborhood(neighbors);
