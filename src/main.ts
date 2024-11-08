@@ -47,12 +47,12 @@ function SpawnCache(i: number, j: number) {
 
   // interactions for the cache
   rect.bindPopup(() => {
-    let numCoins = Math.floor(luck([i, j, "initialValue"].toString()) * 10);
+    let numTokens = Math.floor(luck([i, j, "initialValue"].toString()) * 10);
     const popupDiv = document.createElement("div");
 
-    // popup has a description and 2 buttons, one to withdraw and one to deposit coins
+    // popup has a description and 2 buttons, one to withdraw and one to deposit Tokens
     popupDiv.innerHTML = `
-            <div>This is cache "${i},${j}". It has <span id="value">${numCoins}</span> coins.</div>
+            <div>This is cache "${i},${j}". It has <span id="value">${numTokens}</span> Tokens.</div>
             <button id="withdraw">Withdraw</button>
             <button id="deposit">Deposit</button>`;
 
@@ -60,12 +60,12 @@ function SpawnCache(i: number, j: number) {
     popupDiv.querySelector<HTMLButtonElement>("#withdraw")!.addEventListener(
       "click",
       () => {
-        if (numCoins > 0) {
-          numCoins--;
-          playerCoins++;
-          inventory.innerHTML = `Coins: ${playerCoins}`;
+        if (numTokens > 0) {
+          numTokens--;
+          playerTokens++;
+          inventory.innerHTML = `Tokens: ${playerTokens}`;
           popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-            numCoins.toString();
+            numTokens.toString();
         }
       },
     );
@@ -73,12 +73,12 @@ function SpawnCache(i: number, j: number) {
     popupDiv.querySelector<HTMLButtonElement>("#deposit")!.addEventListener(
       "click",
       () => {
-        if (playerCoins > 0) {
-          playerCoins--;
-          numCoins++;
-          inventory.innerHTML = `Coins: ${playerCoins}`;
+        if (playerTokens > 0) {
+          playerTokens--;
+          numTokens++;
+          inventory.innerHTML = `Tokens: ${playerTokens}`;
           popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-            numCoins.toString();
+            numTokens.toString();
         }
       },
     );
@@ -90,15 +90,8 @@ function SpawnCache(i: number, j: number) {
 function SpawnInNeighborhood(neighborhoodSize: number) {
   // function for spawning caches in a player's immediate surroundings
   // this function will likely change later on
-  // for(let i = -neighborhoodSize; i < neighborhoodSize; i++){
-  //   for(let j = -neighborhoodSize; j < neighborhoodSize; j++){
-  //     if(luck([i,j].toString()) < CACHE_SPAWN_PROB){
-  //       SpawnCache(i, j);
-  //     }
-  //   }
-  // }
-  for (let i = neighborhoodSize; i > -neighborhoodSize; i--) {
-    for (let j = neighborhoodSize; j > -neighborhoodSize; j--) {
+  for (let i = -neighborhoodSize; i < neighborhoodSize; i++) {
+    for (let j = -neighborhoodSize; j < neighborhoodSize; j++) {
       if (luck([i, j].toString()) < CACHE_SPAWN_PROB) {
         SpawnCache(i, j);
       }
@@ -106,7 +99,7 @@ function SpawnInNeighborhood(neighborhoodSize: number) {
   }
 }
 
-const APP_NAME = "GeoCoin Collector";
+const APP_NAME = "GeoToken Gatherer";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 document.title = APP_NAME;
 app.innerHTML = APP_NAME;
@@ -118,8 +111,8 @@ const player = leaflet.marker(STARTING_POS);
 player.bindTooltip("You are here");
 player.addTo(map);
 
-let playerCoins: number = 0;
+let playerTokens: number = 0;
 const inventory = document.querySelector<HTMLDivElement>("#inventory")!;
-inventory.innerHTML = `Coins: ${playerCoins}`;
+inventory.innerHTML = `Tokens: ${playerTokens}`;
 
 SpawnInNeighborhood(NEIGHBORHOOD_SIZE);
