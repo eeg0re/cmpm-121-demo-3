@@ -9,12 +9,20 @@ export class Board {
   readonly tileWidth: number;
   readonly tileVisibilityRadius: number;
 
+  // keep track of player position in the board
+  PLAYER_POS: leaflet.LatLng;
+
   private readonly knownCells: Map<string, Cell>;
 
-  constructor(tileWidth: number, tileVisibilityRadius: number) {
+  constructor(
+    tileWidth: number,
+    tileVisibilityRadius: number,
+    playerPosition: leaflet.LatLng,
+  ) {
     this.tileWidth = tileWidth;
     this.tileVisibilityRadius = tileVisibilityRadius;
     this.knownCells = new Map<string, Cell>();
+    this.PLAYER_POS = playerPosition;
   }
 
   private getCanonicalCell(cell: Cell): Cell {
@@ -35,13 +43,12 @@ export class Board {
 
   getCellBounds(cell: Cell): leaflet.LatLngBounds {
     const { i, j } = cell;
-    const origin = leaflet.latLng(i, j);
+    const width = this.tileWidth;
+    const origin = this.PLAYER_POS;
+
     const bounds = leaflet.latLngBounds([
-      [origin.lat + i * this.tileWidth, origin.lng + j * this.tileWidth],
-      [
-        origin.lat + (i + 1) * this.tileWidth,
-        origin.lng + (j + 1) * this.tileWidth,
-      ],
+      [origin.lat + i * width, origin.lng + j * width],
+      [origin.lat + (i + 1) * width, origin.lng + (j + 1) * width],
     ]);
     return bounds;
   }
@@ -60,5 +67,9 @@ export class Board {
       }
     }
     return resultCells;
+  }
+
+  updatePlayerPosition(newPosition: leaflet.LatLng) {
+    this.PLAYER_POS = newPosition;
   }
 }

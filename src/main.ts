@@ -11,6 +11,12 @@ interface Cell {
   readonly j: number;
 }
 
+interface Token {
+  readonly i: number;
+  readonly j: number;
+  readonly num: number;
+}
+
 //const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
 const STARTING_POS = leaflet.latLng(0, 0);
 const PLAYER_POS = STARTING_POS;
@@ -37,11 +43,7 @@ leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 function SpawnCache(i: number, j: number) {
-  const origin = PLAYER_POS;
-  const bounds = leaflet.latLngBounds([
-    [origin.lat + i * CELL_SIZE, origin.lng + j * CELL_SIZE],
-    [origin.lat + (i + 1) * CELL_SIZE, origin.lng + (j + 1) * CELL_SIZE],
-  ]);
+  const bounds = worldBoard.getCellBounds({ i, j });
 
   // temporarily create a rectangle to represent each cache
   const rect = leaflet.rectangle(bounds);
@@ -91,7 +93,6 @@ function SpawnCache(i: number, j: number) {
 
 function SpawnInNeighborhood(neighbors: Cell[]) {
   // function for spawning caches in a player's immediate surroundings
-  // this function will likely change later on
   for (let k = 0; k < neighbors.length; k++) {
     const { i, j } = neighbors[k];
     if (luck([i, j].toString()) < CACHE_SPAWN_PROB) {
@@ -117,6 +118,6 @@ const inventory = document.querySelector<HTMLDivElement>("#inventory")!;
 inventory.innerHTML = `Tokens: ${playerTokens}`;
 
 // create the world board - holds all the cells for our game
-const worldBoard = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE);
+const worldBoard = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE, PLAYER_POS);
 const neighbors: Cell[] = worldBoard.getCellsNearPoint(PLAYER_POS);
 SpawnInNeighborhood(neighbors);
