@@ -4,6 +4,7 @@ import "./style.css";
 import "leaflet/dist/leaflet.css";
 import "./leafletWorkaround.ts";
 import luck from "./luck.ts";
+import { Board } from "./board.ts";
 
 interface Cell {
   readonly i: number;
@@ -117,3 +118,8 @@ const inventory = document.querySelector<HTMLDivElement>("#inventory")!;
 inventory.innerHTML = `Tokens: ${playerTokens}`;
 
 SpawnInNeighborhood(NEIGHBORHOOD_SIZE);
+
+// create the world board - holds all the cells for our game
+const worldBoard = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE);
+const neighbors: Cell[] = worldBoard.getCellsNearPoint(PLAYER_POS);
+console.table(neighbors);

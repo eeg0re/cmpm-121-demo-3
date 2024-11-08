@@ -5,8 +5,6 @@ interface Cell {
   readonly j: number;
 }
 
-const CELL_SIZE = 0.01;
-
 export class Board {
   readonly tileWidth: number;
   readonly tileVisibilityRadius: number;
@@ -14,7 +12,6 @@ export class Board {
   private readonly knownCells: Map<string, Cell>;
 
   constructor(tileWidth: number, tileVisibilityRadius: number) {
-    // ...
     this.tileWidth = tileWidth;
     this.tileVisibilityRadius = tileVisibilityRadius;
     this.knownCells = new Map<string, Cell>();
@@ -23,7 +20,6 @@ export class Board {
   private getCanonicalCell(cell: Cell): Cell {
     const { i, j } = cell;
     const key = [i, j].toString();
-    // ...
     if (!this.knownCells.has(key)) {
       this.knownCells.set(key, { i, j });
     }
@@ -41,8 +37,11 @@ export class Board {
     const { i, j } = cell;
     const origin = leaflet.latLng(i, j);
     const bounds = leaflet.latLngBounds([
-      [origin.lat + i * CELL_SIZE, origin.lng + j * CELL_SIZE],
-      [origin.lat + (i + 1) * CELL_SIZE, origin.lng + (j + 1) * CELL_SIZE],
+      [origin.lat + i * this.tileWidth, origin.lng + j * this.tileWidth],
+      [
+        origin.lat + (i + 1) * this.tileWidth,
+        origin.lng + (j + 1) * this.tileWidth,
+      ],
     ]);
     return bounds;
   }
@@ -50,7 +49,6 @@ export class Board {
   getCellsNearPoint(point: leaflet.LatLng): Cell[] {
     const resultCells: Cell[] = [];
     const originCell = this.getCellForPoint(point);
-    // ...
     const radius = this.tileVisibilityRadius;
     for (let i = -radius; i <= radius; i++) {
       for (let j = -radius; j <= radius; j++) {
