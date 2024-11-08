@@ -10,7 +10,8 @@ interface Cell {
   readonly j: number;
 }
 
-const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
+//const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
+const STARTING_POS = leaflet.latLng(0, 0);
 const PLAYER_POS = STARTING_POS;
 
 const ZOOM_LVL: number = 19;
