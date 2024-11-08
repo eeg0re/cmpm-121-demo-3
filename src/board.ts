@@ -53,6 +53,22 @@ export class Board {
     return bounds;
   }
 
+  //   getCellsNearPoint(point: leaflet.LatLng): Cell[] {
+  //     const resultCells: Cell[] = [];
+  //     const originCell = this.getCellForPoint(point);
+  //     const radius = this.tileVisibilityRadius;
+  //     for (let i = -radius; i <= radius; i+= this.tileWidth) {
+  //       for (let j = -radius; j <= radius; j+= this.tileWidth) {
+  //         const cell = this.getCanonicalCell({
+  //           i: originCell.i + i,
+  //           j: originCell.j + j,
+  //         });
+  //         resultCells.push(cell);
+  //       }
+  //     }
+  //     return resultCells;
+  //   }
+
   getCellsNearPoint(point: leaflet.LatLng): Cell[] {
     const resultCells: Cell[] = [];
     const originCell = this.getCellForPoint(point);

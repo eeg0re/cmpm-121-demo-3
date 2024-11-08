@@ -42,6 +42,14 @@ leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 
+function MakeTokens(cell: Cell, num: number): Token[] {
+  const tokens: Token[] = [];
+  for (let k = 0; k < num; k++) {
+    tokens.push({ i: cell.i, j: cell.j, num: k });
+  }
+  return tokens;
+}
+
 function SpawnCache(i: number, j: number) {
   const bounds = worldBoard.getCellBounds({ i, j });
 
@@ -52,6 +60,10 @@ function SpawnCache(i: number, j: number) {
   // interactions for the cache
   rect.bindPopup(() => {
     let numTokens = Math.floor(luck([i, j, "initialValue"].toString()) * 10);
+
+    const tokens = MakeTokens({ i, j }, numTokens);
+    console.log(tokens);
+
     const popupDiv = document.createElement("div");
 
     // popup has a description and 2 buttons, one to withdraw and one to deposit Tokens
@@ -86,7 +98,6 @@ function SpawnCache(i: number, j: number) {
         }
       },
     );
-
     return popupDiv;
   });
 }
