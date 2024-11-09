@@ -17,8 +17,8 @@ interface Token {
   readonly num: number;
 }
 
-//const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
-const STARTING_POS = leaflet.latLng(0, 0);
+const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
+//const STARTING_POS = leaflet.latLng(0, 0);
 const PLAYER_POS = STARTING_POS;
 
 const ZOOM_LVL: number = 19;
@@ -52,6 +52,7 @@ function MakeTokens(cell: Cell, num: number): Token[] {
 
 function SpawnCache(i: number, j: number) {
   const bounds = worldBoard.getCellBounds({ i, j });
+  console.log(bounds);
 
   // temporarily create a rectangle to represent each cache
   const rect = leaflet.rectangle(bounds);
@@ -62,7 +63,7 @@ function SpawnCache(i: number, j: number) {
     let numTokens = Math.floor(luck([i, j, "initialValue"].toString()) * 10);
 
     const tokens = MakeTokens({ i, j }, numTokens);
-    console.log(tokens);
+    console.log(tokens); // remove later, just for committing code
 
     const popupDiv = document.createElement("div");
 
