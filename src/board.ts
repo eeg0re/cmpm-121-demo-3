@@ -5,6 +5,17 @@ interface Cell {
   readonly j: number;
 }
 
+interface Token {
+  readonly i: number;
+  readonly j: number;
+  readonly num: number;
+}
+
+interface Cache {
+  readonly cell: Cell;
+  cacheTokens: Token[];
+}
+
 export class Board {
   readonly tileWidth: number;
   readonly tileVisibilityRadius: number;
@@ -46,15 +57,6 @@ export class Board {
   }
 
   getCellBounds(cell: Cell): leaflet.LatLngBounds {
-    // const { i, j } = cell;
-    // const width = this.tileWidth;
-    // const origin = this.PLAYER_POS;
-
-    // const bounds = leaflet.latLngBounds([
-    //   [origin.lat + i * width, origin.lng + j * width],
-    //   [origin.lat + (i + 1) * width, origin.lng + (j + 1) * width],
-    // ]);
-    // return bounds;
     const { i, j } = cell;
     const bounds = leaflet.latLngBounds([[i, j], [
       i + this.tileWidth,
@@ -63,29 +65,8 @@ export class Board {
     return bounds;
   }
 
-  //   getCellsNearPoint(point: leaflet.LatLng): Cell[] {
-  //     const resultCells: Cell[] = [];
-  //     //const originCell = this.getCellForPoint(point);
-  //     // console.log(originCell);
-  //     const radius = this.tileVisibilityRadius;
-  //     for (let i = -radius; i <= radius; i++) {
-  //       for (let j = -radius; j <= radius; j++) {
-  //         const cell = this.getCanonicalCell({
-  //           i: i,
-  //           j: j,
-  //         });
-  //         //console.log(cell)
-  //         resultCells.push(cell);
-  //       }
-  //     }
-  //     console.log(resultCells);
-  //     return resultCells;
-  //   }
-
   getCellsNearPoint(point: leaflet.LatLng): Cell[] {
     const resultCells: Cell[] = [];
-    //const originCell = this.getCellForPoint(point);
-    // console.log(originCell);
     const radius = this.tileVisibilityRadius;
     for (let i = -radius; i <= radius; i++) {
       for (let j = -radius; j <= radius; j++) {
@@ -93,7 +74,6 @@ export class Board {
           i: point.lat + i * this.tileWidth,
           j: point.lng + j * this.tileWidth,
         });
-        //console.log(cell)
         resultCells.push(cell);
       }
     }

@@ -17,14 +17,22 @@ interface Token {
   readonly num: number;
 }
 
-const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
-//const STARTING_POS = leaflet.latLng(0, 0);
+interface Cache {
+  readonly cell: Cell;
+  cacheTokens: Token[];
+  marker: leaflet.Rectangle;
+}
+
+//const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
+const STARTING_POS = leaflet.latLng(0, 0);
 const PLAYER_POS = STARTING_POS;
 
 const ZOOM_LVL: number = 19;
 const CELL_SIZE: number = 0.0001; // number of degrees in a cell
 const CACHE_SPAWN_PROB: number = 0.1; // probability of a cache spawning in a cell
 const NEIGHBORHOOD_SIZE: number = 8;
+
+const playerInventory: Token[] = [];
 
 const map: leaflet.Map = leaflet.map("map", { // create our map starting at Oakes Classroom
   center: PLAYER_POS,
@@ -42,34 +50,51 @@ leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 
-function MakeTokens(cell: Cell, num: number): Token[] {
-  const tokens: Token[] = [];
-  for (let k = 0; k < num; k++) {
-    tokens.push({ i: cell.i, j: cell.j, num: k });
-  }
-  return tokens;
+function MakeControls() {
+  const controlSection = document.querySelector<HTMLDivElement>("#controls")!;
+  const locationButton = document.createElement("button");
+  controlSection.append(locationButton);
+  locationButton.innerHTML = "🌎";
+
+  const upButton = document.createElement("button");
+  controlSection.append(upButton);
+  upButton.innerHTML = "⬆️";
+
+  const leftButton = document.createElement("button");
+  controlSection.append(leftButton);
+  leftButton.innerHTML = "⬅️";
+
+  const rightButton = document.createElement("button");
+  controlSection.append(rightButton);
+  rightButton.innerHTML = "➡️";
+
+  const downButton = document.createElement("button");
+  controlSection.append(downButton);
+  downButton.innerHTML = "⬇️";
+
+  const trashButton = document.createElement("button");
+  controlSection.append(trashButton);
+  trashButton.innerHTML = "🗑️";
 }
 
-function SpawnCache(i: number, j: number) {
+function MakeCache(i: number, j: number): Cache {
   const bounds = worldBoard.getCellBounds({ i, j });
-  console.log(bounds);
-
-  // temporarily create a rectangle to represent each cache
   const rect = leaflet.rectangle(bounds);
+  const cache: Cache = { cell: { i, j }, cacheTokens: [], marker: rect };
+
   rect.addTo(map);
 
-  // interactions for the cache
   rect.bindPopup(() => {
-    let numTokens = Math.floor(luck([i, j, "initialValue"].toString()) * 10);
+    const numTokens = Math.floor(luck([i, j, "initialValue"].toString()) * 10);
 
-    const tokens = MakeTokens({ i, j }, numTokens);
-    console.log(tokens); // remove later, just for committing code
+    cache.cacheTokens = MakeTokens({ i, j }, numTokens);
+    const tokenStr = TokensToString(cache.cacheTokens);
 
     const popupDiv = document.createElement("div");
 
     // popup has a description and 2 buttons, one to withdraw and one to deposit Tokens
     popupDiv.innerHTML = `
-            <div>This is cache "${i},${j}". It has <span id="value">${numTokens}</span> Tokens.</div>
+            <div>This is cache "${i},${j}". It has <span id="value">${numTokens}</span> Tokens.\n<spand id="tokens">${tokenStr}</span></div>
             <button id="withdraw">Withdraw</button>
             <button id="deposit">Deposit</button>`;
 
@@ -77,12 +102,16 @@ function SpawnCache(i: number, j: number) {
     popupDiv.querySelector<HTMLButtonElement>("#withdraw")!.addEventListener(
       "click",
       () => {
-        if (numTokens > 0) {
-          numTokens--;
+        if (cache.cacheTokens.length > 0) {
           playerTokens++;
-          inventory.innerHTML = `Tokens: ${playerTokens}`;
-          popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-            numTokens.toString();
+          playerInventory.push(cache.cacheTokens.pop()!);
+          inventory.innerHTML = `Tokens: ${playerTokens}\n${
+            TokensToString(playerInventory)
+          }`;
+          popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML = cache
+            .cacheTokens.length.toString();
+          popupDiv.querySelector<HTMLSpanElement>("#tokens")!.innerHTML =
+            TokensToString(cache.cacheTokens);
         }
       },
     );
@@ -90,17 +119,44 @@ function SpawnCache(i: number, j: number) {
     popupDiv.querySelector<HTMLButtonElement>("#deposit")!.addEventListener(
       "click",
       () => {
-        if (playerTokens > 0) {
+        if (playerInventory.length > 0) {
           playerTokens--;
-          numTokens++;
-          inventory.innerHTML = `Tokens: ${playerTokens}`;
-          popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-            numTokens.toString();
+          cache.cacheTokens.push(playerInventory.pop()!);
+          inventory.innerHTML = `Tokens: ${playerTokens}\n${
+            TokensToString(playerInventory)
+          }`;
+          popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML = cache
+            .cacheTokens.length.toString();
+          popupDiv.querySelector<HTMLSpanElement>("#tokens")!.innerHTML =
+            TokensToString(cache.cacheTokens);
         }
       },
     );
     return popupDiv;
   });
+
+  return cache;
+}
+
+function MakeTokens(cell: Cell, num: number): Token[] {
+  const tokens: Token[] = [];
+  for (let k = 0; k < num; k++) {
+    tokens.push({ i: cell.i, j: cell.j, num: k + 1 });
+  }
+  return tokens;
+}
+
+function TokenToString(token: Token): string {
+  const { i, j, num } = token;
+  return `(${i}:${j})#${num}`;
+}
+
+function TokensToString(tokens: Token[]): string {
+  let tokenStr = "";
+  for (const token of tokens) {
+    tokenStr += TokenToString(token) + "\n";
+  }
+  return tokenStr;
 }
 
 function SpawnInNeighborhood(neighbors: Cell[]) {
@@ -108,7 +164,7 @@ function SpawnInNeighborhood(neighbors: Cell[]) {
   for (let k = 0; k < neighbors.length; k++) {
     const { i, j } = neighbors[k];
     if (luck([i, j].toString()) < CACHE_SPAWN_PROB) {
-      SpawnCache(i, j);
+      MakeCache(i, j);
     }
   }
 }
@@ -121,13 +177,17 @@ app.innerHTML = APP_NAME;
 const header = document.createElement("h1");
 app.append(header);
 
+MakeControls();
+
 const player = leaflet.marker(STARTING_POS);
 player.bindTooltip("You are here");
 player.addTo(map);
 
 let playerTokens: number = 0;
 const inventory = document.querySelector<HTMLDivElement>("#inventory")!;
-inventory.innerHTML = `Tokens: ${playerTokens}`;
+inventory.innerHTML = `Tokens: ${playerTokens}\n${
+  TokensToString(playerInventory)
+}`;
 
 // create the world board - holds all the cells for our game
 const worldBoard = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE, PLAYER_POS);
