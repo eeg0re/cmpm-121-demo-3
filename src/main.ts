@@ -24,8 +24,8 @@ interface Cache {
 }
 
 //const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
-const STARTING_POS = leaflet.latLng(0, 0);
-const PLAYER_POS = STARTING_POS;
+const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
+let PLAYER_POS: leaflet.latlng = STARTING_POS;
 
 const ZOOM_LVL: number = 19;
 const CELL_SIZE: number = 0.0001; // number of degrees in a cell
@@ -50,6 +50,36 @@ leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 
+function UpdatePlayerPos(sign: string) {
+  switch (sign) {
+    case "up":
+      PLAYER_POS.lat -= CELL_SIZE;
+      player.setLatLng(PLAYER_POS);
+      worldBoard.updatePlayerPosition(PLAYER_POS);
+      break;
+    case "down":
+      PLAYER_POS.lat += CELL_SIZE;
+      player.setLatLng(PLAYER_POS);
+      worldBoard.updatePlayerPosition(PLAYER_POS);
+      break;
+    case "left":
+      PLAYER_POS.lng -= CELL_SIZE;
+      player.setLatLng(PLAYER_POS);
+      worldBoard.updatePlayerPosition(PLAYER_POS);
+      break;
+    case "right":
+      PLAYER_POS.lng += CELL_SIZE;
+      player.setLatLng(PLAYER_POS);
+      worldBoard.updatePlayerPosition(PLAYER_POS);
+      break;
+    case "reset":
+      PLAYER_POS = STARTING_POS;
+      player.setLatLng(PLAYER_POS);
+      worldBoard.updatePlayerPosition(PLAYER_POS);
+      break;
+  }
+}
+
 function MakeControls() {
   const controlSection = document.querySelector<HTMLDivElement>("#controls")!;
   const locationButton = document.createElement("button");
@@ -59,22 +89,37 @@ function MakeControls() {
   const upButton = document.createElement("button");
   controlSection.append(upButton);
   upButton.innerHTML = "⬆️";
+  upButton.addEventListener("click", () => {
+    UpdatePlayerPos("up");
+  });
 
   const leftButton = document.createElement("button");
   controlSection.append(leftButton);
   leftButton.innerHTML = "⬅️";
+  upButton.addEventListener("click", () => {
+    UpdatePlayerPos("left");
+  });
 
   const rightButton = document.createElement("button");
   controlSection.append(rightButton);
   rightButton.innerHTML = "➡️";
+  upButton.addEventListener("click", () => {
+    UpdatePlayerPos("right");
+  });
 
   const downButton = document.createElement("button");
   controlSection.append(downButton);
   downButton.innerHTML = "⬇️";
+  upButton.addEventListener("click", () => {
+    UpdatePlayerPos("down");
+  });
 
   const trashButton = document.createElement("button");
   controlSection.append(trashButton);
   trashButton.innerHTML = "🗑️";
+  trashButton.addEventListener("click", () => {
+    UpdatePlayerPos("reset");
+  });
 }
 
 function MakeCache(i: number, j: number): Cache {

@@ -77,7 +77,6 @@ export class Board {
         resultCells.push(cell);
       }
     }
-    console.log(resultCells);
     return resultCells;
   }
 
