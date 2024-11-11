@@ -53,29 +53,31 @@ leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 function UpdatePlayerPos(sign: string) {
   switch (sign) {
     case "up":
-      PLAYER_POS.lat -= CELL_SIZE;
-      player.setLatLng(PLAYER_POS);
+      PLAYER_POS.lat += CELL_SIZE;
+      player.setLatLng(PLAYER_POS).update();
       worldBoard.updatePlayerPosition(PLAYER_POS);
       break;
     case "down":
-      PLAYER_POS.lat += CELL_SIZE;
-      player.setLatLng(PLAYER_POS);
+      PLAYER_POS.lat -= CELL_SIZE;
+      player.setLatLng(PLAYER_POS).update();
       worldBoard.updatePlayerPosition(PLAYER_POS);
       break;
     case "left":
       PLAYER_POS.lng -= CELL_SIZE;
-      player.setLatLng(PLAYER_POS);
+      player.setLatLng(PLAYER_POS).update();
       worldBoard.updatePlayerPosition(PLAYER_POS);
       break;
     case "right":
       PLAYER_POS.lng += CELL_SIZE;
-      player.setLatLng(PLAYER_POS);
+      player.setLatLng(PLAYER_POS).update();
       worldBoard.updatePlayerPosition(PLAYER_POS);
       break;
     case "reset":
       PLAYER_POS = STARTING_POS;
-      player.setLatLng(PLAYER_POS);
+      player.setLatLng(PLAYER_POS).update();
       worldBoard.updatePlayerPosition(PLAYER_POS);
+      break;
+    default:
       break;
   }
 }
@@ -96,21 +98,21 @@ function MakeControls() {
   const leftButton = document.createElement("button");
   controlSection.append(leftButton);
   leftButton.innerHTML = "⬅️";
-  upButton.addEventListener("click", () => {
+  leftButton.addEventListener("click", () => {
     UpdatePlayerPos("left");
   });
 
   const rightButton = document.createElement("button");
   controlSection.append(rightButton);
   rightButton.innerHTML = "➡️";
-  upButton.addEventListener("click", () => {
+  rightButton.addEventListener("click", () => {
     UpdatePlayerPos("right");
   });
 
   const downButton = document.createElement("button");
   controlSection.append(downButton);
   downButton.innerHTML = "⬇️";
-  upButton.addEventListener("click", () => {
+  downButton.addEventListener("click", () => {
     UpdatePlayerPos("down");
   });
 
