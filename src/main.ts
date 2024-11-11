@@ -23,8 +23,8 @@ interface Cache {
   marker: leaflet.Rectangle;
 }
 
-//const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
-const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
+const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
+//const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
 let PLAYER_POS: leaflet.latlng = STARTING_POS;
 
 const ZOOM_LVL: number = 19;
@@ -50,34 +50,42 @@ leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 
+function MovePlayer(position: leaflet.LatLng) {
+  player.setLatLng(position).update();
+  worldBoard.updatePlayerPosition(position);
+  const playerMovedEvent = new CustomEvent("player moved", {
+    detail: { position },
+  });
+  document.dispatchEvent(playerMovedEvent);
+}
+
+document.addEventListener("player moved", () => {
+  const neighbors: Cell[] = worldBoard.getCellsNearPoint(PLAYER_POS);
+  SpawnInNeighborhood(neighbors);
+  map.setView(PLAYER_POS);
+});
+
 function UpdatePlayerPos(sign: string) {
   switch (sign) {
     case "up":
       PLAYER_POS.lat += CELL_SIZE;
-      player.setLatLng(PLAYER_POS).update();
-      worldBoard.updatePlayerPosition(PLAYER_POS);
+      MovePlayer(PLAYER_POS);
       break;
     case "down":
       PLAYER_POS.lat -= CELL_SIZE;
-      player.setLatLng(PLAYER_POS).update();
-      worldBoard.updatePlayerPosition(PLAYER_POS);
+      MovePlayer(PLAYER_POS);
       break;
     case "left":
       PLAYER_POS.lng -= CELL_SIZE;
-      player.setLatLng(PLAYER_POS).update();
-      worldBoard.updatePlayerPosition(PLAYER_POS);
+      MovePlayer(PLAYER_POS);
       break;
     case "right":
       PLAYER_POS.lng += CELL_SIZE;
-      player.setLatLng(PLAYER_POS).update();
-      worldBoard.updatePlayerPosition(PLAYER_POS);
+      MovePlayer(PLAYER_POS);
       break;
     case "reset":
       PLAYER_POS = STARTING_POS;
-      player.setLatLng(PLAYER_POS).update();
-      worldBoard.updatePlayerPosition(PLAYER_POS);
-      break;
-    default:
+      MovePlayer(PLAYER_POS);
       break;
   }
 }
