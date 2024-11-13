@@ -17,14 +17,25 @@ interface Token {
   readonly num: number;
 }
 
+interface Momento {
+  toMomento(): string;
+  fromMomento(momento: string): GeoCache;
+}
+
+interface GeoCache extends Momento {
+  readonly cell: Cell;
+  cacheTokens: Token[];
+  marker: leaflet.Rectangle;
+}
+
 interface Cache {
   readonly cell: Cell;
   cacheTokens: Token[];
   marker: leaflet.Rectangle;
 }
 
-const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
-//const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
+//const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
+const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
 let PLAYER_POS: leaflet.latlng = STARTING_POS;
 
 const ZOOM_LVL: number = 19;
@@ -60,8 +71,8 @@ function MovePlayer(position: leaflet.LatLng) {
 }
 
 document.addEventListener("player moved", () => {
-  const neighbors: Cell[] = worldBoard.getCellsNearPoint(PLAYER_POS);
-  SpawnInNeighborhood(neighbors);
+  // const neighbors: Cell[] = worldBoard.getCellsNearPoint(PLAYER_POS);
+  // SpawnInNeighborhood(neighbors);
   map.setView(PLAYER_POS);
 });
 
@@ -132,11 +143,8 @@ function MakeControls() {
   });
 }
 
-function MakeCache(i: number, j: number): Cache {
-  const bounds = worldBoard.getCellBounds({ i, j });
-  const rect = leaflet.rectangle(bounds);
-  const cache: Cache = { cell: { i, j }, cacheTokens: [], marker: rect };
-
+function CreateCachePopup(rect: leaflet.rectangle, cache: GeoCache) {
+  const { i, j } = cache.cell;
   rect.addTo(map);
 
   rect.bindPopup(() => {
@@ -189,6 +197,27 @@ function MakeCache(i: number, j: number): Cache {
     );
     return popupDiv;
   });
+}
+
+function MakeCache(i: number, j: number): GeoCache {
+  const bounds = worldBoard.getCellBounds({ i, j });
+
+  const rect = leaflet.rectangle(bounds);
+
+  const cache: GeoCache = {
+    cell: { i, j },
+    cacheTokens: [],
+    marker: rect,
+    toMomento: () => {
+      return JSON.stringify(cache);
+    },
+    fromMomento: (momento: string) => {
+      return JSON.parse(momento);
+    },
+  };
+
+  CreateCachePopup(rect, cache);
+  worldBoard.AttachCacheInfo(cache);
 
   return cache;
 }

@@ -11,9 +11,15 @@ interface Token {
   readonly num: number;
 }
 
-interface Cache {
+interface Momento<T> {
+  toMomento(): T;
+  fromMomento(momento: T): void;
+}
+
+interface GeoCache extends Momento<string> {
   readonly cell: Cell;
   cacheTokens: Token[];
+  marker: leaflet.Rectangle;
 }
 
 export class Board {
@@ -24,6 +30,7 @@ export class Board {
   PLAYER_POS: leaflet.LatLng;
 
   private readonly knownCells: Map<string, Cell>;
+  private readonly cacheMap: Map<string, Cell>;
 
   constructor(
     tileWidth: number,
@@ -33,6 +40,7 @@ export class Board {
     this.tileWidth = tileWidth;
     this.tileVisibilityRadius = tileVisibilityRadius;
     this.knownCells = new Map<string, Cell>();
+    this.cacheMap = new Map<string, Cell>();
     this.PLAYER_POS = playerPosition;
   }
 
@@ -82,5 +90,11 @@ export class Board {
 
   updatePlayerPosition(newPosition: leaflet.LatLng) {
     this.PLAYER_POS = newPosition;
+  }
+
+  AttachCacheInfo(cache: GeoCache) {
+    const key = cache.toMomento();
+    console.log(key);
+    this.cacheMap.set(key, cache.cell);
   }
 }
