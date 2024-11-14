@@ -1,4 +1,5 @@
 import leaflet from "leaflet";
+import { fromMomento, GeoCache, toMomento } from "./main.ts";
 
 interface Cell {
   readonly i: number;
@@ -11,16 +12,7 @@ interface Token {
   readonly num: number;
 }
 
-interface Momento<T> {
-  toMomento(): T;
-  fromMomento(momento: T): void;
-}
-
-interface GeoCache extends Momento<string> {
-  readonly cell: Cell;
-  cacheTokens: Token[];
-  marker: leaflet.Rectangle;
-}
+type Momento = string;
 
 export class Board {
   readonly tileWidth: number;
@@ -30,7 +22,7 @@ export class Board {
   PLAYER_POS: leaflet.LatLng;
 
   private readonly knownCells: Map<string, Cell>;
-  private readonly cacheMap: Map<string, Cell>;
+  private readonly cacheMap: Map<Cell, Momento>;
 
   constructor(
     tileWidth: number,
@@ -40,7 +32,7 @@ export class Board {
     this.tileWidth = tileWidth;
     this.tileVisibilityRadius = tileVisibilityRadius;
     this.knownCells = new Map<string, Cell>();
-    this.cacheMap = new Map<string, Cell>();
+    this.cacheMap = new Map<Cell, Momento>();
     this.PLAYER_POS = playerPosition;
   }
 
@@ -93,8 +85,21 @@ export class Board {
   }
 
   AttachCacheInfo(cache: GeoCache) {
-    const key = cache.toMomento();
-    console.log(key);
-    this.cacheMap.set(key, cache.cell);
+    const value = toMomento(cache);
+    console.log(value);
+    if (this.cacheMap.has(cache.cell)) {
+      this.cacheMap.delete(cache.cell);
+      this.cacheMap.set(cache.cell, value);
+    } else {
+      this.cacheMap.set(cache.cell, value);
+    }
+  }
+
+  getCacheInfo(cell: Cell): GeoCache | undefined {
+    const momento = this.cacheMap.get(cell);
+    if (momento) {
+      return fromMomento(momento);
+    }
+    return undefined;
   }
 }

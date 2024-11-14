@@ -17,21 +17,9 @@ interface Token {
   readonly num: number;
 }
 
-interface Momento {
-  toMomento(): string;
-  fromMomento(momento: string): GeoCache;
-}
-
-interface GeoCache extends Momento {
+export interface GeoCache {
   readonly cell: Cell;
   cacheTokens: Token[];
-  marker: leaflet.Rectangle;
-}
-
-interface Cache {
-  readonly cell: Cell;
-  cacheTokens: Token[];
-  marker: leaflet.Rectangle;
 }
 
 //const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
@@ -199,22 +187,20 @@ function CreateCachePopup(rect: leaflet.rectangle, cache: GeoCache) {
   });
 }
 
+export function toMomento(cache: GeoCache): string {
+  return JSON.stringify(cache);
+}
+
+export function fromMomento(momento: string): GeoCache {
+  return JSON.parse(momento);
+}
+
 function MakeCache(i: number, j: number): GeoCache {
   const bounds = worldBoard.getCellBounds({ i, j });
 
   const rect = leaflet.rectangle(bounds);
 
-  const cache: GeoCache = {
-    cell: { i, j },
-    cacheTokens: [],
-    marker: rect,
-    toMomento: () => {
-      return JSON.stringify(cache);
-    },
-    fromMomento: (momento: string) => {
-      return JSON.parse(momento);
-    },
-  };
+  const cache: GeoCache = { cell: { i, j }, cacheTokens: [] };
 
   CreateCachePopup(rect, cache);
   worldBoard.AttachCacheInfo(cache);
