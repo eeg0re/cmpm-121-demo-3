@@ -244,16 +244,22 @@ function loadMomento(cacheKey: string): GeoCache | null {
 function MakeCache(i: number, j: number): GeoCache {
   const cacheKey: string = [i, j].toString();
   const cacheMomento = loadMomento(cacheKey);
-
-  if (cacheMomento) {
-    return cacheMomento;
-  }
-
   const bounds = worldBoard.getCellBounds({ i, j });
   const rect = leaflet.rectangle(bounds);
-  const cache: GeoCache = { cell: { i, j }, cacheTokens: [] };
-  cache.cacheTokens = CreateCachePopup(rect, cache);
-  saveMomento(cacheKey, cache);
+
+  let cache: GeoCache;
+  if (cacheMomento) {
+    cache = {
+      cell: { i, j },
+      cacheTokens: cacheMomento.cacheTokens,
+    };
+    CreateCachePopup(rect, cache);
+  } else {
+    cache = { cell: { i, j }, cacheTokens: [] };
+    cache.cacheTokens = CreateCachePopup(rect, cache);
+    saveMomento(cacheKey, cache);
+  }
+
   return cache;
 }
 
