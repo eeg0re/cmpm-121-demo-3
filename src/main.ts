@@ -37,7 +37,6 @@ leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 function MovePlayer(position: leaflet.LatLng) {
   player.setLatLng(position).update();
-  //worldBoard.updatePlayerPosition(position);
   const playerMovedEvent = new CustomEvent("player moved", {
     detail: { position },
   });
@@ -153,6 +152,8 @@ function DepositToken(cache: GeoCache): Token[] | undefined {
     playerTokens--;
     cache.cacheTokens.push(playerInventory.pop()!);
     updateInventory();
+    const cacheKey: string = [cache.cell.i, cache.cell.j].toString();
+    saveMomento(cacheKey, cache);
     return cache.cacheTokens;
   }
   return undefined;
@@ -163,6 +164,8 @@ function WithdrawToken(cache: GeoCache) {
     playerTokens++;
     playerInventory.push(cache.cacheTokens.pop()!);
     updateInventory();
+    const cacheKey: string = [cache.cell.i, cache.cell.j].toString();
+    saveMomento(cacheKey, cache);
     return cache.cacheTokens;
   }
   return undefined;
@@ -227,22 +230,30 @@ function CreateCachePopup(rect: leaflet.rectangle, cache: GeoCache): Token[] {
   return cache.cacheTokens;
 }
 
-export function toMomento(cache: GeoCache): string {
-  return JSON.stringify(cache);
+// saveMomento and loadMomento functions written with the help of brace: https://chat.brace.tools/s/5efd7b0d-c596-4757-971b-e202d974c948
+function saveMomento(cacheKey: string, cache: GeoCache): void {
+  const momento: string = JSON.stringify(cache);
+  localStorage.setItem(cacheKey, momento);
 }
 
-export function fromMomento(momento: string): GeoCache {
-  return JSON.parse(momento);
+function loadMomento(cacheKey: string): GeoCache | null {
+  const momento = localStorage.getItem(cacheKey);
+  return momento ? JSON.parse(momento) : null;
 }
 
 function MakeCache(i: number, j: number): GeoCache {
+  const cacheKey: string = [i, j].toString();
+  const cacheMomento = loadMomento(cacheKey);
+
+  if (cacheMomento) {
+    return cacheMomento;
+  }
+
   const bounds = worldBoard.getCellBounds({ i, j });
-
   const rect = leaflet.rectangle(bounds);
-
   const cache: GeoCache = { cell: { i, j }, cacheTokens: [] };
-
   cache.cacheTokens = CreateCachePopup(rect, cache);
+  saveMomento(cacheKey, cache);
   return cache;
 }
 
