@@ -1,5 +1,4 @@
 import leaflet from "leaflet";
-import { fromMomento, toMomento } from "./main.ts";
 
 export interface Cell {
   readonly i: number;
@@ -23,22 +22,17 @@ export class Board {
   readonly tileWidth: number;
   readonly tileVisibilityRadius: number;
 
-  // keep track of player position in the board
-  PLAYER_POS: leaflet.LatLng;
-
   private readonly knownCells: Map<string, Cell>;
   private readonly cacheMap: Map<Cell, Momento>;
 
   constructor(
     tileWidth: number,
     tileVisibilityRadius: number,
-    playerPosition: leaflet.LatLng,
   ) {
     this.tileWidth = tileWidth;
     this.tileVisibilityRadius = tileVisibilityRadius;
     this.knownCells = new Map<string, Cell>();
     this.cacheMap = new Map<Cell, Momento>();
-    this.PLAYER_POS = playerPosition;
   }
 
   private getCanonicalCell(cell: Cell): Cell {
@@ -83,27 +77,5 @@ export class Board {
       }
     }
     return resultCells;
-  }
-
-  updatePlayerPosition(newPosition: leaflet.LatLng) {
-    this.PLAYER_POS = newPosition;
-  }
-
-  AttachCacheInfo(cache: GeoCache) {
-    const value = toMomento(cache);
-    if (this.cacheMap.has(cache.cell)) {
-      this.cacheMap.delete(cache.cell);
-      this.cacheMap.set(cache.cell, value);
-    } else {
-      this.cacheMap.set(cache.cell, value);
-    }
-  }
-
-  getCacheInfo(cell: Cell): GeoCache | undefined {
-    const momento = this.cacheMap.get(cell);
-    if (momento) {
-      return fromMomento(momento);
-    }
-    return undefined;
   }
 }

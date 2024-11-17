@@ -37,7 +37,7 @@ leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 function MovePlayer(position: leaflet.LatLng) {
   player.setLatLng(position).update();
-  worldBoard.updatePlayerPosition(position);
+  //worldBoard.updatePlayerPosition(position);
   const playerMovedEvent = new CustomEvent("player moved", {
     detail: { position },
   });
@@ -168,6 +168,7 @@ function WithdrawToken(cache: GeoCache) {
   return undefined;
 }
 
+// function written with the help of brace: https://chat.brace.tools/s/5efd7b0d-c596-4757-971b-e202d974c948
 function createPopupElement(
   i: number,
   j: number,
@@ -182,6 +183,7 @@ function createPopupElement(
   return popupDiv;
 }
 
+// function written with the help of brace: https://chat.brace.tools/s/5efd7b0d-c596-4757-971b-e202d974c948
 function setupPopupListeners(popupDiv: HTMLDivElement, cache: GeoCache): void {
   popupDiv.querySelector<HTMLButtonElement>("#withdraw")!.addEventListener(
     "click",
@@ -270,8 +272,7 @@ function SpawnInNeighborhood(neighbors: Cell[]) {
   for (let k = 0; k < neighbors.length; k++) {
     const { i, j } = neighbors[k];
     if (luck([i, j].toString()) < CACHE_SPAWN_PROB) {
-      const tempCache = MakeCache(i, j);
-      worldBoard.AttachCacheInfo(tempCache);
+      MakeCache(i, j);
     }
   }
 }
@@ -297,6 +298,6 @@ inventory.innerHTML = `Tokens: ${playerTokens}\n${
 }`;
 
 // create the world board - holds all the cells for our game
-const worldBoard = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE, player_pos);
+const worldBoard = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE);
 const neighbors: Cell[] = worldBoard.getCellsNearPoint(player_pos);
 SpawnInNeighborhood(neighbors);
