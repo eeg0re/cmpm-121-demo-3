@@ -1,15 +1,20 @@
 import leaflet from "leaflet";
-import { fromMomento, GeoCache, toMomento } from "./main.ts";
+import { fromMomento, toMomento } from "./main.ts";
 
-interface Cell {
+export interface Cell {
   readonly i: number;
   readonly j: number;
 }
 
-interface Token {
+export interface Token {
   readonly i: number;
   readonly j: number;
   readonly num: number;
+}
+
+export interface GeoCache {
+  readonly cell: Cell;
+  cacheTokens: Token[];
 }
 
 type Momento = string;
@@ -86,7 +91,6 @@ export class Board {
 
   AttachCacheInfo(cache: GeoCache) {
     const value = toMomento(cache);
-    console.log(value);
     if (this.cacheMap.has(cache.cell)) {
       this.cacheMap.delete(cache.cell);
       this.cacheMap.set(cache.cell, value);

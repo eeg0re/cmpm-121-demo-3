@@ -4,37 +4,23 @@ import "./style.css";
 import "leaflet/dist/leaflet.css";
 import "./leafletWorkaround.ts";
 import luck from "./luck.ts";
-import { Board } from "./board.ts";
-
-interface Cell {
-  readonly i: number;
-  readonly j: number;
-}
-
-interface Token {
-  readonly i: number;
-  readonly j: number;
-  readonly num: number;
-}
-
-export interface GeoCache {
-  readonly cell: Cell;
-  cacheTokens: Token[];
-}
+import { Board, Cell, GeoCache, Token } from "./board.ts";
 
 //const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
 const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
-let PLAYER_POS: leaflet.latlng = STARTING_POS;
 
 const ZOOM_LVL: number = 19;
 const CELL_SIZE: number = 0.0001; // number of degrees in a cell
 const CACHE_SPAWN_PROB: number = 0.1; // probability of a cache spawning in a cell
 const NEIGHBORHOOD_SIZE: number = 8;
+const MAX_TOKENS: number = 10;
+
+let player_pos: leaflet.latlng = STARTING_POS;
 
 const playerInventory: Token[] = [];
 
 const map: leaflet.Map = leaflet.map("map", { // create our map starting at Oakes Classroom
-  center: PLAYER_POS,
+  center: player_pos,
   zoom: ZOOM_LVL,
   minZoom: ZOOM_LVL,
   maxZoom: ZOOM_LVL,
@@ -59,32 +45,32 @@ function MovePlayer(position: leaflet.LatLng) {
 }
 
 document.addEventListener("player moved", () => {
-  // const neighbors: Cell[] = worldBoard.getCellsNearPoint(PLAYER_POS);
+  // const neighbors: Cell[] = worldBoard.getCellsNearPoint(player_pos);
   // SpawnInNeighborhood(neighbors);
-  map.setView(PLAYER_POS);
+  map.setView(player_pos);
 });
 
 function UpdatePlayerPos(sign: string) {
   switch (sign) {
     case "up":
-      PLAYER_POS.lat += CELL_SIZE;
-      MovePlayer(PLAYER_POS);
+      player_pos.lat += CELL_SIZE;
+      MovePlayer(player_pos);
       break;
     case "down":
-      PLAYER_POS.lat -= CELL_SIZE;
-      MovePlayer(PLAYER_POS);
+      player_pos.lat -= CELL_SIZE;
+      MovePlayer(player_pos);
       break;
     case "left":
-      PLAYER_POS.lng -= CELL_SIZE;
-      MovePlayer(PLAYER_POS);
+      player_pos.lng -= CELL_SIZE;
+      MovePlayer(player_pos);
       break;
     case "right":
-      PLAYER_POS.lng += CELL_SIZE;
-      MovePlayer(PLAYER_POS);
+      player_pos.lng += CELL_SIZE;
+      MovePlayer(player_pos);
       break;
     case "reset":
-      PLAYER_POS = STARTING_POS;
-      MovePlayer(PLAYER_POS);
+      player_pos = STARTING_POS;
+      MovePlayer(player_pos);
       break;
   }
 }
@@ -131,60 +117,112 @@ function MakeControls() {
   });
 }
 
-function CreateCachePopup(rect: leaflet.rectangle, cache: GeoCache) {
+// this function written with the help of brace: https://chat.brace.tools/s/5efd7b0d-c596-4757-971b-e202d974c948
+function updatePopupValue(popupDiv: HTMLDivElement, numTokens: string): void {
+  const valueSpan = popupDiv.querySelector<HTMLSpanElement>("#value")!;
+  if (valueSpan) {
+    valueSpan.innerHTML = numTokens;
+  } else {
+    console.error("Element with ID #value not found in popupDiv");
+  }
+}
+
+// this function written with the help of brace: https://chat.brace.tools/s/5efd7b0d-c596-4757-971b-e202d974c948
+function updatePopupTokens(popupDiv: HTMLDivElement, tokenStr: string): void {
+  const tokensSpan = popupDiv.querySelector<HTMLSpanElement>("#tokens")!;
+  if (tokensSpan) {
+    tokensSpan.innerHTML = tokenStr;
+  } else {
+    console.error("Element with ID #tokens not found in popupDiv");
+  }
+}
+
+function ChangePopupText(popupDiv: HTMLDivElement, cache: GeoCache) {
+  updatePopupValue(popupDiv, cache.cacheTokens.length.toString());
+  updatePopupTokens(popupDiv, TokensToString(cache.cacheTokens));
+}
+
+function updateInventory() {
+  inventory.innerHTML = `Tokens: ${playerTokens}\n${
+    TokensToString(playerInventory)
+  }`;
+}
+
+function DepositToken(cache: GeoCache): Token[] | undefined {
+  if (playerInventory.length > 0) {
+    playerTokens--;
+    cache.cacheTokens.push(playerInventory.pop()!);
+    updateInventory();
+    return cache.cacheTokens;
+  }
+  return undefined;
+}
+
+function WithdrawToken(cache: GeoCache) {
+  if (cache.cacheTokens.length > 0) {
+    playerTokens++;
+    playerInventory.push(cache.cacheTokens.pop()!);
+    updateInventory();
+    return cache.cacheTokens;
+  }
+  return undefined;
+}
+
+function createPopupElement(
+  i: number,
+  j: number,
+  numTokens: number,
+  tokenStr: string,
+): HTMLDivElement {
+  const popupDiv = document.createElement("div");
+  popupDiv.innerHTML = `
+          <div>This is cache "${i},${j}". It has <span id="value">${numTokens}</span> Tokens.\n<spand id="tokens">${tokenStr}</span></div>
+          <button id="withdraw">Withdraw</button>
+          <button id="deposit">Deposit</button>`;
+  return popupDiv;
+}
+
+function setupPopupListeners(popupDiv: HTMLDivElement, cache: GeoCache): void {
+  popupDiv.querySelector<HTMLButtonElement>("#withdraw")!.addEventListener(
+    "click",
+    () => {
+      const updatedCache = WithdrawToken(cache);
+      if (updatedCache) {
+        cache.cacheTokens = updatedCache;
+      }
+      ChangePopupText(popupDiv, cache);
+    },
+  );
+
+  popupDiv.querySelector<HTMLButtonElement>("#deposit")!.addEventListener(
+    "click",
+    () => {
+      const updatedCache = DepositToken(cache);
+      if (updatedCache) {
+        cache.cacheTokens = updatedCache;
+      }
+      ChangePopupText(popupDiv, cache);
+    },
+  );
+}
+
+function CreateCachePopup(rect: leaflet.rectangle, cache: GeoCache): Token[] {
   const { i, j } = cache.cell;
   rect.addTo(map);
 
   rect.bindPopup(() => {
-    const numTokens = Math.floor(luck([i, j, "initialValue"].toString()) * 10);
+    const numTokens = Math.floor(
+      luck([i, j, "initialValue"].toString()) * MAX_TOKENS,
+    );
 
     cache.cacheTokens = MakeTokens({ i, j }, numTokens);
     const tokenStr = TokensToString(cache.cacheTokens);
 
-    const popupDiv = document.createElement("div");
-
-    // popup has a description and 2 buttons, one to withdraw and one to deposit Tokens
-    popupDiv.innerHTML = `
-            <div>This is cache "${i},${j}". It has <span id="value">${numTokens}</span> Tokens.\n<spand id="tokens">${tokenStr}</span></div>
-            <button id="withdraw">Withdraw</button>
-            <button id="deposit">Deposit</button>`;
-
-    // add event listeners for each button!
-    popupDiv.querySelector<HTMLButtonElement>("#withdraw")!.addEventListener(
-      "click",
-      () => {
-        if (cache.cacheTokens.length > 0) {
-          playerTokens++;
-          playerInventory.push(cache.cacheTokens.pop()!);
-          inventory.innerHTML = `Tokens: ${playerTokens}\n${
-            TokensToString(playerInventory)
-          }`;
-          popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML = cache
-            .cacheTokens.length.toString();
-          popupDiv.querySelector<HTMLSpanElement>("#tokens")!.innerHTML =
-            TokensToString(cache.cacheTokens);
-        }
-      },
-    );
-
-    popupDiv.querySelector<HTMLButtonElement>("#deposit")!.addEventListener(
-      "click",
-      () => {
-        if (playerInventory.length > 0) {
-          playerTokens--;
-          cache.cacheTokens.push(playerInventory.pop()!);
-          inventory.innerHTML = `Tokens: ${playerTokens}\n${
-            TokensToString(playerInventory)
-          }`;
-          popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML = cache
-            .cacheTokens.length.toString();
-          popupDiv.querySelector<HTMLSpanElement>("#tokens")!.innerHTML =
-            TokensToString(cache.cacheTokens);
-        }
-      },
-    );
+    const popupDiv = createPopupElement(i, j, numTokens, tokenStr);
+    setupPopupListeners(popupDiv, cache);
     return popupDiv;
   });
+  return cache.cacheTokens;
 }
 
 export function toMomento(cache: GeoCache): string {
@@ -202,9 +240,7 @@ function MakeCache(i: number, j: number): GeoCache {
 
   const cache: GeoCache = { cell: { i, j }, cacheTokens: [] };
 
-  CreateCachePopup(rect, cache);
-  worldBoard.AttachCacheInfo(cache);
-
+  cache.cacheTokens = CreateCachePopup(rect, cache);
   return cache;
 }
 
@@ -234,7 +270,8 @@ function SpawnInNeighborhood(neighbors: Cell[]) {
   for (let k = 0; k < neighbors.length; k++) {
     const { i, j } = neighbors[k];
     if (luck([i, j].toString()) < CACHE_SPAWN_PROB) {
-      MakeCache(i, j);
+      const tempCache = MakeCache(i, j);
+      worldBoard.AttachCacheInfo(tempCache);
     }
   }
 }
@@ -260,6 +297,6 @@ inventory.innerHTML = `Tokens: ${playerTokens}\n${
 }`;
 
 // create the world board - holds all the cells for our game
-const worldBoard = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE, PLAYER_POS);
-const neighbors: Cell[] = worldBoard.getCellsNearPoint(PLAYER_POS);
+const worldBoard = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE, player_pos);
+const neighbors: Cell[] = worldBoard.getCellsNearPoint(player_pos);
 SpawnInNeighborhood(neighbors);

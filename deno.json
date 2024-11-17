@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "dev": "deno run -A --node-modules-dir npm:vite",
+    "dev": "deno run -A --node-modules-dir npm:vite@5.4.11",
     "build": "deno run -A --node-modules-dir npm:vite build",
     "preview": "deno run -A --node-modules-dir npm:vite preview",
     "serve": "deno run --allow-net --allow-read https://deno.land/std@0.157.0/http/file_server.ts dist/",
@@ -15,6 +15,7 @@
   "imports": {
     "geojson": "npm:geojson@^0.5.0",
     "leaflet": "npm:leaflet@^1.9.4",
-    "murmur-32": "npm:murmur-32@^1.0.0"
+    "murmur-32": "npm:murmur-32@^1.0.0",
+    "vite": "npm:vite@5.4.11"
   }
 }
