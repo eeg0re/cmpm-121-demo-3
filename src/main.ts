@@ -28,6 +28,8 @@ const map: leaflet.Map = leaflet.map("map", { // create our map starting at Oake
   scrollWheelZoom: false,
 });
 
+const cacheGroup = leaflet.layerGroup().addTo(map);
+
 // add the world background to the leaflet map
 leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -44,8 +46,7 @@ function MovePlayer(position: leaflet.LatLng) {
 }
 
 document.addEventListener("player moved", () => {
-  // const neighbors: Cell[] = worldBoard.getCellsNearPoint(player_pos);
-  // SpawnInNeighborhood(neighbors);
+  UpdateVisibleCaches();
   map.setView(player_pos);
 });
 
@@ -213,7 +214,7 @@ function setupPopupListeners(popupDiv: HTMLDivElement, cache: GeoCache): void {
 
 function CreateCachePopup(rect: leaflet.rectangle, cache: GeoCache): Token[] {
   const { i, j } = cache.cell;
-  rect.addTo(map);
+  rect.addTo(cacheGroup);
 
   rect.bindPopup(() => {
     const numTokens = Math.floor(
@@ -248,6 +249,7 @@ function MakeCache(i: number, j: number): GeoCache {
   const rect = leaflet.rectangle(bounds);
 
   let cache: GeoCache;
+
   if (cacheMomento) {
     cache = {
       cell: { i, j },
@@ -294,6 +296,14 @@ function SpawnInNeighborhood(neighbors: Cell[]) {
   }
 }
 
+function UpdateVisibleCaches(): void {
+  cacheGroup.clearLayers();
+  map.removeLayer(cacheGroup);
+  const neighbors: Cell[] = worldBoard.getCellsNearPoint(player_pos);
+  SpawnInNeighborhood(neighbors);
+  cacheGroup.addTo(map);
+}
+
 const APP_NAME = "GeoToken Gatherer";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 document.title = APP_NAME;
@@ -315,6 +325,6 @@ inventory.innerHTML = `Tokens: ${playerTokens}\n${
 }`;
 
 // create the world board - holds all the cells for our game
-const worldBoard = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE);
+const worldBoard: Board = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE);
 const neighbors: Cell[] = worldBoard.getCellsNearPoint(player_pos);
 SpawnInNeighborhood(neighbors);
