@@ -6,13 +6,13 @@ import "./leafletWorkaround.ts";
 import luck from "./luck.ts";
 import { Board, Cell, GeoCache, Token } from "./board.ts";
 
-//const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
-const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
+const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
+//const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
 
 const ZOOM_LVL: number = 19;
 const CELL_SIZE: number = 0.0001; // number of degrees in a cell
 const CACHE_SPAWN_PROB: number = 0.1; // probability of a cache spawning in a cell
-const NEIGHBORHOOD_SIZE: number = 8;
+const NEIGHBORHOOD_SIZE: number = 1;
 const MAX_TOKENS: number = 10;
 
 let player_pos: leaflet.latlng = STARTING_POS;
@@ -148,13 +148,16 @@ function updateInventory() {
   }`;
 }
 
+function CreateCacheKey(cache: GeoCache): string {
+  return [cache.cell.i, cache.cell.j].toString();
+}
+
 function DepositToken(cache: GeoCache): Token[] | undefined {
   if (playerInventory.length > 0) {
     playerTokens--;
     cache.cacheTokens.push(playerInventory.pop()!);
     updateInventory();
-    const cacheKey: string = [cache.cell.i, cache.cell.j].toString();
-    saveMomento(cacheKey, cache);
+    saveMomento(CreateCacheKey(cache), cache);
     return cache.cacheTokens;
   }
   return undefined;
@@ -165,8 +168,7 @@ function WithdrawToken(cache: GeoCache) {
     playerTokens++;
     playerInventory.push(cache.cacheTokens.pop()!);
     updateInventory();
-    const cacheKey: string = [cache.cell.i, cache.cell.j].toString();
-    saveMomento(cacheKey, cache);
+    saveMomento(CreateCacheKey(cache), cache);
     return cache.cacheTokens;
   }
   return undefined;
@@ -213,18 +215,19 @@ function setupPopupListeners(popupDiv: HTMLDivElement, cache: GeoCache): void {
 }
 
 function CreateCachePopup(rect: leaflet.rectangle, cache: GeoCache): Token[] {
+  // this function rewritten with the help of brace: https://chat.brace.tools/s/5efd7b0d-c596-4757-971b-e202d974c948
   const { i, j } = cache.cell;
   rect.addTo(cacheGroup);
-
   rect.bindPopup(() => {
-    const numTokens = Math.floor(
-      luck([i, j, "initialValue"].toString()) * MAX_TOKENS,
-    );
-
-    cache.cacheTokens = MakeTokens({ i, j }, numTokens);
-    const tokenStr = TokensToString(cache.cacheTokens);
-
-    const popupDiv = createPopupElement(i, j, numTokens, tokenStr);
+    const tokens = cache.cacheTokens.length > 0
+      ? cache.cacheTokens
+      : MakeTokens(
+        cache.cell,
+        Math.floor(luck([i, j, "initialValue"].toString()) * MAX_TOKENS),
+      );
+    cache.cacheTokens = tokens;
+    const tokenStr = TokensToString(tokens);
+    const popupDiv = createPopupElement(i, j, tokens.length, tokenStr);
     setupPopupListeners(popupDiv, cache);
     return popupDiv;
   });
@@ -239,7 +242,17 @@ function saveMomento(cacheKey: string, cache: GeoCache): void {
 
 function loadMomento(cacheKey: string): GeoCache | null {
   const momento = localStorage.getItem(cacheKey);
-  return momento ? JSON.parse(momento) : null;
+  if (momento) {
+    try {
+      return JSON.parse(momento);
+    } catch (error) {
+      console.error(`Error parsing cache momento for key ${cacheKey} `, error);
+      localStorage.removeItem(cacheKey);
+    }
+    return null;
+  }
+  return null;
+  //return momento ? JSON.parse(momento) : null;
 }
 
 function MakeCache(i: number, j: number): GeoCache {
