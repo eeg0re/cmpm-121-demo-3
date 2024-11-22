@@ -218,16 +218,26 @@ function CreateCachePopup(rect: leaflet.rectangle, cache: GeoCache): Token[] {
   // this function rewritten with the help of brace: https://chat.brace.tools/s/5efd7b0d-c596-4757-971b-e202d974c948
   const { i, j } = cache.cell;
   rect.addTo(cacheGroup);
+
+  if (loadMomento(CreateCacheKey(cache)) === null) {
+    console.log("Cache is empty, generating new tokens");
+    cache.cacheTokens = MakeTokens(
+      cache.cell,
+      Math.floor(luck([i, j, "initialValue"].toString()) * MAX_TOKENS),
+    );
+    saveMomento(CreateCacheKey(cache), cache);
+  } else {
+    console.log("Cache is not empty, using existing tokens");
+  }
+
   rect.bindPopup(() => {
-    const tokens = cache.cacheTokens.length > 0
-      ? cache.cacheTokens
-      : MakeTokens(
-        cache.cell,
-        Math.floor(luck([i, j, "initialValue"].toString()) * MAX_TOKENS),
-      );
-    cache.cacheTokens = tokens;
-    const tokenStr = TokensToString(tokens);
-    const popupDiv = createPopupElement(i, j, tokens.length, tokenStr);
+    const tokenStr = TokensToString(cache.cacheTokens);
+    const popupDiv = createPopupElement(
+      i,
+      j,
+      cache.cacheTokens.length,
+      tokenStr,
+    );
     setupPopupListeners(popupDiv, cache);
     return popupDiv;
   });
@@ -252,7 +262,6 @@ function loadMomento(cacheKey: string): GeoCache | null {
     return null;
   }
   return null;
-  //return momento ? JSON.parse(momento) : null;
 }
 
 function MakeCache(i: number, j: number): GeoCache {
