@@ -6,8 +6,8 @@ import "./leafletWorkaround.ts";
 import luck from "./luck.ts";
 import { Board, Cell, GeoCache, Token } from "./board.ts";
 
-const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
-//const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
+//const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
+const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
 
 const ZOOM_LVL: number = 19;
 const CELL_SIZE: number = 0.0001; // number of degrees in a cell
