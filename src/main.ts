@@ -6,18 +6,22 @@ import "./leafletWorkaround.ts";
 import luck from "./luck.ts";
 import { Board, Cell, GeoCache, Token } from "./board.ts";
 
-//const startingPos = leaflet.latLng(36.98949379578401, -122.06277128548504);
-const startingPos: leaflet.latlng = leaflet.latLng(0, 0);
-
+const DEFAULT_SPAWN = leaflet.latLng(36.98949379578401, -122.06277128548504);
 const ZOOM_LVL: number = 19;
 const CELL_SIZE: number = 0.0001; // number of degrees in a cell
 const CACHE_SPAWN_PROB: number = 0.1; // probability of a cache spawning in a cell
 const NEIGHBORHOOD_SIZE: number = 1;
 const MAX_TOKENS: number = 5;
 
+let startingPos = DEFAULT_SPAWN;
+
 let playerPos: leaflet.latlng = startingPos;
 
 const playerInventory: Token[] = [];
+
+let playerTokens: number = 0;
+
+let spawning: boolean = true;
 
 const map: leaflet.Map = leaflet.map("map", { // create our map starting at Oakes Classroom
   center: playerPos,
@@ -53,9 +57,18 @@ function MovePlayer(position: leaflet.LatLng) {
 document.addEventListener("player moved", () => {
   UpdateVisibleCaches();
   map.setView(playerPos);
-  trackedCoords.push(playerPos);
-  playerTrail.addLatLng(playerPos).addTo(map);
+  if (!spawning) {
+    trackedCoords.push(playerPos);
+    playerTrail.addLatLng(playerPos).addTo(map);
+  }
+  spawning = false;
+  StoreInfo();
 });
+
+function StoreInfo() {
+  localStorage.setItem("playerPos", JSON.stringify(playerPos));
+  localStorage.setItem("playerInventory", JSON.stringify(playerInventory));
+}
 
 function UpdatePlayerPos(sign: string) {
   switch (sign) {
@@ -92,6 +105,7 @@ function resetGame() {
   localStorage.clear();
   playerTokens = 0;
   playerInventory.length = 0;
+  startingPos = DEFAULT_SPAWN;
   playerPos = startingPos;
   trackedCoords.length = 0;
   trackedCoords.push(playerPos);
@@ -116,6 +130,7 @@ function MakeControls() {
         trackedCoords.length = 0;
         trackedCoords.push(playerPos);
         playerTrail.setLatLngs(trackedCoords);
+        StoreInfo();
         MovePlayer(playerPos);
       },
       (error) => {
@@ -215,6 +230,7 @@ function DepositToken(cache: GeoCache): Token[] | undefined {
     cache.cacheTokens.push(playerInventory.pop()!);
     updateInventory();
     saveMomento(CreateCacheKey(cache), cache);
+    StoreInfo();
     return cache.cacheTokens;
   }
   return undefined;
@@ -226,6 +242,7 @@ function WithdrawToken(cache: GeoCache) {
     playerInventory.push(cache.cacheTokens.pop()!);
     updateInventory();
     saveMomento(CreateCacheKey(cache), cache);
+    StoreInfo();
     return cache.cacheTokens;
   }
   return undefined;
@@ -380,6 +397,37 @@ function UpdateVisibleCaches(): void {
   cacheGroup.addTo(map);
 }
 
+function StartGame() {
+  const playerPosStr = localStorage.getItem("playerPos");
+  const playerInventoryStr = localStorage.getItem("playerInventory");
+
+  spawning = true;
+
+  if (playerPosStr) {
+    startingPos = JSON.parse(playerPosStr);
+    playerPos = startingPos;
+    MovePlayer(playerPos);
+  } else {
+    startingPos = DEFAULT_SPAWN;
+    playerPos = startingPos;
+    MovePlayer(playerPos);
+  }
+
+  if (playerInventoryStr) {
+    playerInventory.push(...JSON.parse(playerInventoryStr));
+    playerTokens = playerInventory.length;
+    updateInventory();
+  } else {
+    playerInventory.length = 0;
+    playerTokens = 0;
+    updateInventory();
+  }
+
+  trackedCoords.length = 0;
+  trackedCoords.push(playerPos);
+  playerTrail.setLatLngs(trackedCoords);
+}
+
 const APP_NAME = "GeoToken Gatherer";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 document.title = APP_NAME;
@@ -388,19 +436,18 @@ app.innerHTML = APP_NAME;
 const header = document.createElement("h1");
 app.append(header);
 
-MakeControls();
-
-const player = leaflet.marker(startingPos);
-player.bindTooltip("You are here");
-player.addTo(map);
-
-let playerTokens: number = 0;
 const inventory = document.querySelector<HTMLDivElement>("#inventory")!;
 inventory.innerHTML = `Tokens: ${playerTokens}\n${
   TokensToString(playerInventory)
 }`;
 
-// create the world board - holds all the cells for our game
+const player = leaflet.marker(startingPos);
+player.bindTooltip("You are here");
+player.addTo(map);
+
 const worldBoard: Board = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE);
 const neighbors: Cell[] = worldBoard.getCellsNearPoint(playerPos);
+
+StartGame();
+MakeControls();
 SpawnInNeighborhood(neighbors);
