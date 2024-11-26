@@ -53,7 +53,6 @@ function MovePlayer(position: leaflet.LatLng) {
 document.addEventListener("player moved", () => {
   UpdateVisibleCaches();
   map.setView(playerPos);
-  //const validPos = leaflet.LatLng(playerPos.lat, playerPos.lng);
   trackedCoords.push(playerPos);
   playerTrail.addLatLng(playerPos).addTo(map);
 });
@@ -94,6 +93,9 @@ function resetGame() {
   playerTokens = 0;
   playerInventory.length = 0;
   playerPos = startingPos;
+  trackedCoords.length = 0;
+  trackedCoords.push(playerPos);
+  playerTrail.setLatLngs(trackedCoords);
   updateInventory();
   MovePlayer(startingPos);
 }
@@ -110,6 +112,9 @@ function MakeControls() {
         position.coords.latitude,
         position.coords.longitude,
       );
+      trackedCoords.length = 0;
+      trackedCoords.push(playerPos);
+      playerTrail.setLatLngs(trackedCoords);
       MovePlayer(playerPos);
     });
     map.setView(playerPos);
