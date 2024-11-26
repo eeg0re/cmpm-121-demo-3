@@ -13,7 +13,7 @@ const ZOOM_LVL: number = 19;
 const CELL_SIZE: number = 0.0001; // number of degrees in a cell
 const CACHE_SPAWN_PROB: number = 0.1; // probability of a cache spawning in a cell
 const NEIGHBORHOOD_SIZE: number = 1;
-const MAX_TOKENS: number = 10;
+const MAX_TOKENS: number = 5;
 
 let playerPos: leaflet.latlng = startingPos;
 
@@ -107,17 +107,35 @@ function MakeControls() {
   controlSection.append(locationButton);
   locationButton.innerHTML = "🌎";
   locationButton.addEventListener("click", () => {
-    navigator.geolocation.getCurrentPosition((position) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        playerPos = leaflet.latLng(
+          position.coords.latitude,
+          position.coords.longitude,
+        );
+        trackedCoords.length = 0;
+        trackedCoords.push(playerPos);
+        playerTrail.setLatLngs(trackedCoords);
+        MovePlayer(playerPos);
+      },
+      (error) => {
+        console.error(`Could not get current position. Error: ${error}`);
+      },
+      { enableHighAccuracy: true },
+    );
+
+    map.setView(playerPos);
+
+    // if device moves, update player position
+    navigator.geolocation.watchPosition((position) => {
       playerPos = leaflet.latLng(
         position.coords.latitude,
         position.coords.longitude,
       );
-      trackedCoords.length = 0;
       trackedCoords.push(playerPos);
-      playerTrail.setLatLngs(trackedCoords);
+      playerTrail.addLatLng(playerPos);
       MovePlayer(playerPos);
     });
-    map.setView(playerPos);
   });
 
   const upButton = document.createElement("button");
