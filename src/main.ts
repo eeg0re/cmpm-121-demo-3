@@ -53,31 +53,32 @@ function MovePlayer(position: leaflet.LatLng) {
 document.addEventListener("player moved", () => {
   UpdateVisibleCaches();
   map.setView(playerPos);
+  //const validPos = leaflet.LatLng(playerPos.lat, playerPos.lng);
   trackedCoords.push(playerPos);
-  playerTrail.addLatLng(playerPos);
+  playerTrail.addLatLng(playerPos).addTo(map);
 });
 
 function UpdatePlayerPos(sign: string) {
   switch (sign) {
     case "up":
-      playerPos.lat += CELL_SIZE;
+      playerPos = leaflet.latLng(playerPos.lat + CELL_SIZE, playerPos.lng);
       MovePlayer(playerPos);
       break;
     case "down":
-      playerPos.lat -= CELL_SIZE;
+      playerPos = leaflet.latLng(playerPos.lat - CELL_SIZE, playerPos.lng);
       MovePlayer(playerPos);
       break;
     case "left":
-      playerPos.lng -= CELL_SIZE;
+      playerPos = leaflet.latLng(playerPos.lat, playerPos.lng - CELL_SIZE);
       MovePlayer(playerPos);
       break;
     case "right":
-      playerPos.lng += CELL_SIZE;
+      playerPos = leaflet.latLng(playerPos.lat, playerPos.lng + CELL_SIZE);
       MovePlayer(playerPos);
       break;
     case "reset": {
       const certain = prompt(
-        "Are you sure you want to reset the game? (yes/no)",
+        "Are you sure you want to reset the game? This will erase ALL your progress (yes/no)",
         "no",
       );
       if (certain === "yes") {
