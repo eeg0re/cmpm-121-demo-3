@@ -6,8 +6,8 @@ import "./leafletWorkaround.ts";
 import luck from "./luck.ts";
 import { Board, Cell, GeoCache, Token } from "./board.ts";
 
-//const STARTING_POS = leaflet.latLng(36.98949379578401, -122.06277128548504);
-const STARTING_POS: leaflet.latlng = leaflet.latLng(0, 0);
+//const startingPos = leaflet.latLng(36.98949379578401, -122.06277128548504);
+const startingPos: leaflet.latlng = leaflet.latLng(0, 0);
 
 const ZOOM_LVL: number = 19;
 const CELL_SIZE: number = 0.0001; // number of degrees in a cell
@@ -15,12 +15,12 @@ const CACHE_SPAWN_PROB: number = 0.1; // probability of a cache spawning in a ce
 const NEIGHBORHOOD_SIZE: number = 1;
 const MAX_TOKENS: number = 10;
 
-let player_pos: leaflet.latlng = STARTING_POS;
+let playerPos: leaflet.latlng = startingPos;
 
 const playerInventory: Token[] = [];
 
 const map: leaflet.Map = leaflet.map("map", { // create our map starting at Oakes Classroom
-  center: player_pos,
+  center: playerPos,
   zoom: ZOOM_LVL,
   minZoom: ZOOM_LVL,
   maxZoom: ZOOM_LVL,
@@ -29,6 +29,11 @@ const map: leaflet.Map = leaflet.map("map", { // create our map starting at Oake
 });
 
 const cacheGroup = leaflet.layerGroup().addTo(map);
+
+const trackedCoords: leaflet.latlng[] = [playerPos];
+const playerTrail = leaflet.polyline(trackedCoords, { color: "red" }).addTo(
+  map,
+);
 
 // add the world background to the leaflet map
 leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -47,39 +52,67 @@ function MovePlayer(position: leaflet.LatLng) {
 
 document.addEventListener("player moved", () => {
   UpdateVisibleCaches();
-  map.setView(player_pos);
+  map.setView(playerPos);
+  trackedCoords.push(playerPos);
+  playerTrail.addLatLng(playerPos);
 });
 
 function UpdatePlayerPos(sign: string) {
   switch (sign) {
     case "up":
-      player_pos.lat += CELL_SIZE;
-      MovePlayer(player_pos);
+      playerPos.lat += CELL_SIZE;
+      MovePlayer(playerPos);
       break;
     case "down":
-      player_pos.lat -= CELL_SIZE;
-      MovePlayer(player_pos);
+      playerPos.lat -= CELL_SIZE;
+      MovePlayer(playerPos);
       break;
     case "left":
-      player_pos.lng -= CELL_SIZE;
-      MovePlayer(player_pos);
+      playerPos.lng -= CELL_SIZE;
+      MovePlayer(playerPos);
       break;
     case "right":
-      player_pos.lng += CELL_SIZE;
-      MovePlayer(player_pos);
+      playerPos.lng += CELL_SIZE;
+      MovePlayer(playerPos);
       break;
-    case "reset":
-      player_pos = STARTING_POS;
-      MovePlayer(player_pos);
+    case "reset": {
+      const certain = prompt(
+        "Are you sure you want to reset the game? (yes/no)",
+        "no",
+      );
+      if (certain === "yes") {
+        resetGame();
+      }
       break;
+    }
   }
+}
+
+function resetGame() {
+  localStorage.clear();
+  playerTokens = 0;
+  playerInventory.length = 0;
+  playerPos = startingPos;
+  updateInventory();
+  MovePlayer(startingPos);
 }
 
 function MakeControls() {
   const controlSection = document.querySelector<HTMLDivElement>("#controls")!;
+
   const locationButton = document.createElement("button");
   controlSection.append(locationButton);
   locationButton.innerHTML = "🌎";
+  locationButton.addEventListener("click", () => {
+    navigator.geolocation.getCurrentPosition((position) => {
+      playerPos = leaflet.latLng(
+        position.coords.latitude,
+        position.coords.longitude,
+      );
+      MovePlayer(playerPos);
+    });
+    map.setView(playerPos);
+  });
 
   const upButton = document.createElement("button");
   controlSection.append(upButton);
@@ -220,14 +253,11 @@ function CreateCachePopup(rect: leaflet.rectangle, cache: GeoCache): Token[] {
   rect.addTo(cacheGroup);
 
   if (loadMomento(CreateCacheKey(cache)) === null) {
-    console.log("Cache is empty, generating new tokens");
     cache.cacheTokens = MakeTokens(
       cache.cell,
       Math.floor(luck([i, j, "initialValue"].toString()) * MAX_TOKENS),
     );
     saveMomento(CreateCacheKey(cache), cache);
-  } else {
-    console.log("Cache is not empty, using existing tokens");
   }
 
   rect.bindPopup(() => {
@@ -321,7 +351,7 @@ function SpawnInNeighborhood(neighbors: Cell[]) {
 function UpdateVisibleCaches(): void {
   cacheGroup.clearLayers();
   map.removeLayer(cacheGroup);
-  const neighbors: Cell[] = worldBoard.getCellsNearPoint(player_pos);
+  const neighbors: Cell[] = worldBoard.getCellsNearPoint(playerPos);
   SpawnInNeighborhood(neighbors);
   cacheGroup.addTo(map);
 }
@@ -336,7 +366,7 @@ app.append(header);
 
 MakeControls();
 
-const player = leaflet.marker(STARTING_POS);
+const player = leaflet.marker(startingPos);
 player.bindTooltip("You are here");
 player.addTo(map);
 
@@ -348,5 +378,5 @@ inventory.innerHTML = `Tokens: ${playerTokens}\n${
 
 // create the world board - holds all the cells for our game
 const worldBoard: Board = new Board(CELL_SIZE, NEIGHBORHOOD_SIZE);
-const neighbors: Cell[] = worldBoard.getCellsNearPoint(player_pos);
+const neighbors: Cell[] = worldBoard.getCellsNearPoint(playerPos);
 SpawnInNeighborhood(neighbors);
