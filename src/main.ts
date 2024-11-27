@@ -123,6 +123,7 @@ function ClearMovementHistory() {
 
 function ResetGame() {
   localStorage.clear();
+
   if (watchMovement) {
     navigator.geolocation.clearWatch(watchMovement);
   }
