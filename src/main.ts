@@ -13,6 +13,8 @@ const CACHE_SPAWN_PROB: number = 0.1; // probability of a cache spawning in a ce
 const NEIGHBORHOOD_SIZE: number = 1;
 const MAX_TOKENS: number = 5;
 
+let watchMovement: null | number; // variable to store the watchPosition method, used to clear location settings when the game is reset
+
 let startingPos = DEFAULT_SPAWN;
 
 let playerPos: leaflet.latlng = startingPos;
@@ -94,24 +96,40 @@ function UpdatePlayerPos(sign: string) {
         "no",
       );
       if (certain === "yes") {
-        resetGame();
+        ResetGame();
       }
       break;
     }
   }
 }
 
-function resetGame() {
-  localStorage.clear();
-  playerTokens = 0;
-  playerInventory.length = 0;
+function ResetPlayerLocation() {
   startingPos = DEFAULT_SPAWN;
   playerPos = startingPos;
+  MovePlayer(startingPos);
+}
+
+function ClearInventory() {
+  playerTokens = 0;
+  playerInventory.length = 0;
+  UpdateInventory();
+}
+
+function ClearMovementHistory() {
   trackedCoords.length = 0;
   trackedCoords.push(playerPos);
   playerTrail.setLatLngs(trackedCoords);
-  updateInventory();
-  MovePlayer(startingPos);
+}
+
+function ResetGame() {
+  localStorage.clear();
+  if (watchMovement) {
+    navigator.geolocation.clearWatch(watchMovement);
+  }
+
+  ResetPlayerLocation();
+  ClearMovementHistory();
+  ClearInventory();
 }
 
 function MakeControls() {
@@ -127,9 +145,7 @@ function MakeControls() {
           position.coords.latitude,
           position.coords.longitude,
         );
-        trackedCoords.length = 0;
-        trackedCoords.push(playerPos);
-        playerTrail.setLatLngs(trackedCoords);
+        ClearMovementHistory();
         StoreInfo();
         MovePlayer(playerPos);
       },
@@ -142,7 +158,7 @@ function MakeControls() {
     map.setView(playerPos);
 
     // if device moves, update player position
-    navigator.geolocation.watchPosition((position) => {
+    watchMovement = navigator.geolocation.watchPosition((position) => {
       playerPos = leaflet.latLng(
         position.coords.latitude,
         position.coords.longitude,
@@ -214,7 +230,7 @@ function ChangePopupText(popupDiv: HTMLDivElement, cache: GeoCache) {
   updatePopupTokens(popupDiv, TokensToString(cache.cacheTokens));
 }
 
-function updateInventory() {
+function UpdateInventory() {
   inventory.innerHTML = `Tokens: ${playerTokens}\n${
     TokensToString(playerInventory)
   }`;
@@ -228,7 +244,7 @@ function DepositToken(cache: GeoCache): Token[] | undefined {
   if (playerInventory.length > 0) {
     playerTokens--;
     cache.cacheTokens.push(playerInventory.pop()!);
-    updateInventory();
+    UpdateInventory();
     saveMomento(CreateCacheKey(cache), cache);
     StoreInfo();
     return cache.cacheTokens;
@@ -240,7 +256,7 @@ function WithdrawToken(cache: GeoCache) {
   if (cache.cacheTokens.length > 0) {
     playerTokens++;
     playerInventory.push(cache.cacheTokens.pop()!);
-    updateInventory();
+    UpdateInventory();
     saveMomento(CreateCacheKey(cache), cache);
     StoreInfo();
     return cache.cacheTokens;
@@ -416,16 +432,14 @@ function StartGame() {
   if (playerInventoryStr) {
     playerInventory.push(...JSON.parse(playerInventoryStr));
     playerTokens = playerInventory.length;
-    updateInventory();
+    UpdateInventory();
   } else {
     playerInventory.length = 0;
     playerTokens = 0;
-    updateInventory();
+    UpdateInventory();
   }
 
-  trackedCoords.length = 0;
-  trackedCoords.push(playerPos);
-  playerTrail.setLatLngs(trackedCoords);
+  ClearMovementHistory();
 }
 
 const APP_NAME = "GeoToken Gatherer";
@@ -437,7 +451,7 @@ const header = document.createElement("h1");
 app.append(header);
 
 const inventory = document.querySelector<HTMLDivElement>("#inventory")!;
-inventory.innerHTML = `Tokens: ${playerTokens}\n${
+inventory.innerHTML = `Tokens: ${playerTokens} \n${
   TokensToString(playerInventory)
 }`;
 
